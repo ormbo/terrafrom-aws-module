@@ -1,6 +1,6 @@
 # Cloud Trail of Changes in s3 bucket
 
-<!-- BEGIN_TF_DOCS -->
+This module create cloud trail for Putobject and DeleteObject in s3.
 ## Requirements
 
 No requirements.
