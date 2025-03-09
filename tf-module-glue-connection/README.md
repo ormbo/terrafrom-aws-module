@@ -1,8 +1,9 @@
 # Glue connection terrafrom module
 
 This module create the  following things:
-1. AWS glue connection with JDBC, we can use secret to connect to DB, use vpc settings
-2. AWS glue database catalog
+
+1. AWS glue connection with JDBC, we can use secret to connect to DB, use vpc settings.
+2. AWS glue database catalog, the default is `false` we can create one with `create_catalog_db = true`
 3. AWS glue crawler, the default is `false` we can create one with `create_crawler = true`
 
 <!-- BEGIN_TF_DOCS -->
