@@ -13,7 +13,6 @@ module "s3-bucket-CloudTrail-Logs" {
     }
 }
 
-
 resource "aws_cloudtrail" "cloudtrail-s3" {
     name                          = var.aws_cloudtrail_name
     s3_bucket_name                = var.use_existing_s3 ? module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id : var.s3_bucket_logs_name
@@ -35,14 +34,12 @@ resource "aws_cloudtrail" "cloudtrail-s3" {
             "DeleteObject"
         ]
         }
-        
         field_selector {
         field = "resources.ARN"
 
         #The trailing slash is intentional; do not exclude it.
         starts_with =  var.bucket_list_arn
         }
-
         field_selector {
         field  = "readOnly"
         equals = ["false"]
