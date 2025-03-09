@@ -31,7 +31,6 @@ variable "db_password" {
 variable "get_from_secret_manager" {
     type = bool
     description = "Get the username and password form Secret Manager (optional)"
-    default = true
 }
 variable "secret_name" {
     type = string
