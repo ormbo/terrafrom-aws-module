@@ -3,7 +3,7 @@ variable "aws_cloudtrail_name" {
     description = "Name of the Cloud Trail"
 }
 
-variable "use_existing_s3" {
+variable "use_existing_s3_for_logs" {
     type = bool
     description = "Create new s3 for logging or use existing one"
     default = false

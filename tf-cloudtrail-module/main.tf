@@ -4,7 +4,7 @@ data "aws_s3_bucket" "s3_log_data" {
 
 
 module "s3-bucket-CloudTrail-Logs" {
-    count = var.use_existing_s3 ? 0 : 1
+    count = var.use_existing_s3_for_logs ? 0 : 1
     source            = "terraform-aws-modules/s3-bucket/aws"
     version           = "4.5.0"
 
@@ -20,7 +20,7 @@ module "s3-bucket-CloudTrail-Logs" {
 resource "aws_cloudtrail" "cloudtrail-s3" {
     depends_on                 = [aws_s3_bucket_policy.cloudtrail_bucket_policy]
     name                          = var.aws_cloudtrail_name
-    s3_bucket_name                = var.use_existing_s3 ? var.s3_bucket_logs_name : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id, "")
+    s3_bucket_name                = var.use_existing_s3_for_logs ? var.s3_bucket_logs_name : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id, "")
     s3_key_prefix                 = "Logs"
     include_global_service_events = false
 
@@ -91,7 +91,7 @@ data "aws_iam_policy_document" "iam_policy_s3_logs" {
 
     actions   = ["s3:PutObject"]
     resources = [
-      "arn:aws:s3:::${var.use_existing_s3 ? var.s3_bucket_logs_name : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id, "")}/Logs/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+      "${var.use_existing_s3_for_logs? data.aws_s3_bucket.s3_log_data.arn : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_arn, "")}/Logs/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
     ]
 
     condition {
@@ -111,7 +111,7 @@ data "aws_iam_policy_document" "iam_policy_s3_logs" {
 
 
 resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
-  bucket = var.use_existing_s3 ? var.s3_bucket_logs_name : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id, "")
+  bucket = var.use_existing_s3_for_logs ? var.s3_bucket_logs_name : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_id, "")
   policy = data.aws_iam_policy_document.iam_policy_s3_logs.json
 }
 
