@@ -20,7 +20,7 @@ variable "enable_cloudWatch_logs" {
     description = "Enable Cloud Watch logs"
     default = false
 }
-variable "bucket_list_arn" {
+variable "bucket_list_arn_to_trail" {
     type = list(string)
     description = "The list of arn bucket to log if there is an put or delete"
   

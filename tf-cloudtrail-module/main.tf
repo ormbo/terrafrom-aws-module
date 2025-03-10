@@ -44,7 +44,7 @@ resource "aws_cloudtrail" "cloudtrail-s3" {
         field = "resources.ARN"
 
         # The trailing slash is intentional; do not exclude it.
-        starts_with = var.bucket_list_arn
+        starts_with = var.bucket_list_arn_to_trail
         }
         field_selector {
         field  = "resources.type"
@@ -69,7 +69,7 @@ data "aws_iam_policy_document" "iam_policy_s3_logs" {
 
     actions   = ["s3:GetBucketAcl"]
     resources = [
-      var.use_existing_s3 ? data.aws_s3_bucket.s3_log_data.arn : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_arn, "")
+      var.use_existing_s3_for_logs ? data.aws_s3_bucket.s3_log_data.arn : try(module.s3-bucket-CloudTrail-Logs[0].s3_bucket_arn, "")
     ]
     condition {
       test     = "StringEquals"
