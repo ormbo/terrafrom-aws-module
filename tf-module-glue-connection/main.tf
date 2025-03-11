@@ -29,8 +29,14 @@
 resource "aws_glue_connection" "create_connection" {
   name = var.connection_name
   connection_properties = {
-    JDBC_CONNECTION_URL = "jdbc:${var.data_source}://${var.host}:${var.connection_port}"
-
+    JDBC_CONNECTION_URL = (
+      var.data_source == "oracle" ? "jdbc:oracle:thin:@${var.host}:${var.connection_port}/${db_name}" :
+      var.data_source == "mysql" ? "jdbc:mysql://${var.host}:${var.connection_port}/${db_name}" :
+      var.data_source == "postgresql" ? "jdbc:postgresql://${var.host}:${var.connection_port}/${db_name}" :
+      var.data_source == "sqlserver" ? "jdbc:sqlserver://${var.host}:${var.connection_port};databaseName=${db_name}" :
+      var.data_source == "redshift" ? "jdbc:redshift://${var.host}:${var.connection_port}/${db_name}" :
+      null
+    )
     # If using Secrets Manager, use SECRET_ID; otherwise, use USERNAME & PASSWORD
     SECRET_ID = var.get_from_secret_manager ? data.aws_secretsmanager_secret.secret[0].name : null
     USERNAME  = var.get_from_secret_manager ? null : var.db_username
@@ -66,12 +72,9 @@ resource "aws_glue_crawler" "jdbc-crawler-multi-db" {
   role          = var.glue_iam_role_name
   database_name = var.glue_database
 
-  dynamic "jdbc_target" {
-    for_each = var.list_db_name  # List of databases you want to target
-    content {
+  jdbc_target {
       connection_name = aws_glue_connection.create_connection.name
-      path            = "${jdbc_target.value}/%"  # Correct way to reference each.value in dynamic block
-    }
+      path            = "${var.db_name}/%"  # Correct way to reference each.value in dynamic block
   }
 
   depends_on = [aws_glue_connection.create_connection]

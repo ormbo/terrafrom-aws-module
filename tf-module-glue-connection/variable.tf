@@ -2,21 +2,17 @@ variable "connection_name" {
     type = string
     description = "The connection name"
 }
-variable "region" {
-    type = string
-    description = "The region of the resource"
-}
 variable "host" {
     type = string
-    description = "The url of the DB"
+    description = "The url of the DB or IP"
 }
 variable "connection_port" {
     type = string
     description = "The connection port"
 }
-variable "list_db_name" {
-    type = list(string)
-    description = "The url of the DB"
+variable "db_name" {
+    type = string
+    description = "The list of DB"
 }
 variable "db_username" {
     type = string
