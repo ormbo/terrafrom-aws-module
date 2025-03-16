@@ -15,7 +15,6 @@ variable "trigger_name" {
 variable "type" {
     type = string
     description = "The type of trigger. Valid values are CONDITIONAL, EVENT, ON_DEMAND, and SCHEDULED "
-  
 }
 variable "actions" {
   #  type = list(object({

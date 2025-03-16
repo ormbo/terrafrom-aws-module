@@ -1,84 +1,33 @@
-module "aws_cloudtrail_s3" {
-    source = "../../tf-cloudtrail-module"
 
-    aws_cloudtrail_name       = "cloud-trail-s3-test"
-    bucket_list_arn_to_trail  = [ "arn:aws:s3:::dwh-bi-development-s3","arn:aws:s3:::dwh-bi-state-s3" ]
-    use_existing_s3_for_logs  = true
-    s3_bucket_logs_name       = "dwh-bi-state-s3"
-    enable_cloudWatch_logs    = false
+data "aws_availability_zones" "available" {}
+
+
+module "ec2_sgw" {
+  source     = "../../../terrafrom-aws-module/tf-module-ec2-sgw"
+
+  name                               = "ec2-storage-gateway" 
+  availability_zone                  = data.aws_availability_zones.available.names[0] 
+  subnet_id                          = "subnet-0f223283350d92e03"
+  ingress_cidr_block_activation      = "10.0.1.0/28"
+  ssh_key_name                       = "storage-gateway"
+  create_vpc_endpoint                = true
+  create_security_group              = true
+  create_vpc_endpoint_sg             = true 
+  vpc_id                             = "vpc-06e7dd7eccec7a493"
+  timezone                           = "GMT+2:00"
 }
 
-module "eventbridge" {
-    source  = "terraform-aws-modules/eventbridge/aws"
-    version = "3.14.3"
+resource "aws_storagegateway_gateway" "example" {
+  gateway_name          = "example-gateway"
+  gateway_timezone      = "GMT"
+  gateway_type          = "FILE_S3"
+  activation_key        = "CRJKK-0M4Q1-0GN33-EHBB3-1KBFE"  # Initially, leave it empty for creation
 
-    create_bus = false  
-    create_role = true
-    role_name = "EventBridgeTest"
-    attach_policy = true
-
-    policy = aws_iam_policy.glue_invoke.arn
-    rules = {
-            glue_workflow_trigger = {
-            description = "Capture the s3 PutObject",
-            event_pattern = jsonencode({
-                "source": ["aws.s3"],
-                "detail-type": ["AWS API Call via CloudTrail"],
-                "detail": {
-                    "eventSource": ["s3.amazonaws.com"],
-                    "eventName": ["PutObject"]
-                }
-                })
-            }
-    }
-    targets = {
-            glue_workflow_trigger = [
-                {   
-                    name = "glue_workflow_trigger"
-                    arn  = aws_glue_workflow.workflow.arn
-                    attach_role_arn    = true
-                    target_id = "workflow-test"
-                }]
-        }
-
-    }
-
-
-resource "aws_iam_policy" "glue_invoke" {
-  name        = "glue-invoke-policy"
-  description = "Allows EventBridge to trigger Glue Workflow"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action   = "glue:notifyEvent"
-        Effect   = "Allow"
-        Resource = aws_glue_workflow.workflow.arn
-      }
-    ]
-  })
+  tags = {
+    Name = "example-storage-gateway"
+  }
 }
-
-resource "aws_glue_workflow" "workflow" {
-  name = "test-workflow"
-  
-}
-
-module "aws_glue_trigger" {
-    source = "../../tf-module-glue-trigger"
-
-    trigger_name = "check"
-    with_workflow = true
-    workflow_name = aws_glue_workflow.workflow.name
-    type = "EVENT"
-    actions = [{
-        job_name = "test"
-    }]
-    event_batching_condition={
-      batch_size = 1
-      batch_window = 900
-    }
-    
-
+resource "aws_storagegateway_cache" "example" {
+  disk_id     = data.aws_storagegateway_local_disk.example.id
+  gateway_arn = aws_storagegateway_gateway.example.arn
 }
