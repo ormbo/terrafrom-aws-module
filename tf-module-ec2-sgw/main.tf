@@ -1,9 +1,9 @@
 ##########################
 ## Create EC2 Instance ##
 ##########################
-data "aws_region" "aws_region" {
+data "aws_region" "aws_region" {}
+data "aws_caller_identity" "current" {}
   
-}
 locals {
   vpc_security_group_ids = var.create_security_group ? [aws_security_group.ec2_sg["ec2_sg"].id] : [var.security_group_id]
 }
@@ -137,11 +137,64 @@ resource "aws_security_group" "security_group_endpoint" {
   }
 }
 
+resource "aws_iam_role" "role_ec2_instance_profile" {
+  name               = "runner_ec2_role_instance_profile"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+resource "aws_iam_instance_profile" "runner_ec2_profile" {
+  name = "runner_ec2_profile"
+  role = aws_iam_role.role_ec2_instance_profile.name
+}
+
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+data "aws_iam_policy_document" "PutParameter_permission" {
+  statement {
+    effect  = "Allow"
+    actions = [	
+				"ssm:GetParameter",
+				"ssm:PutParameter"]
+    resources = ["arn:aws:ssm:${data.aws_region.aws_region.name}:${data.aws_caller_identity.current.account_id}:parameter/sgw/activation_key"]
+    }
+}
+resource "aws_iam_policy" "policy" {
+  name        = "test-policy"
+  description = "A test policy"
+  policy      = data.aws_iam_policy_document.PutParameter_permission.json
+}
+
+resource "aws_iam_role_policy_attachment" "attach-policy-to-role" {
+  role       = aws_iam_role.role_ec2_instance_profile.name
+  policy_arn = aws_iam_policy.policy.arn
+}
+
+resource "aws_ssm_parameter" "secret" {
+  name        = "/sgw/activation_key"
+  description = "The parameter for the activation key, create that to terraform destroy"
+  type        = "SecureString"
+  value       =  "null"
+
+}
+
+
 resource "aws_instance" "runner_ec2" {
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = var.subnet_id
   vpc_security_group_ids = local.vpc_security_group_ids
+  iam_instance_profile = aws_iam_instance_profile.runner_ec2_profile.name
 
   user_data = <<-EOF
   #!/bin/bash
@@ -151,9 +204,11 @@ resource "aws_instance" "runner_ec2" {
   echo "Waiting for a valid response from $TARGET_URL..."
 
   RESPONSE=""
+
   while true; do
     RESPONSE=$(curl -s "$TARGET_URL")
-    if [ -z "$RESPONSE" ]; then
+    
+    if [[ -z "$RESPONSE" || "$RESPONSE" == "null" ]]; then
       echo "No response yet. Retrying in 5 seconds..."
       sleep 5
     else
@@ -172,10 +227,12 @@ resource "aws_instance" "runner_ec2" {
   tags = {
     Name = "Runner-EC2"
   }
-
-  depends_on = [aws_instance.ec2_sgw]
+  depends_on = [time_sleep.wait_for_storage_gateway_up ]
 }
 
+resource "time_sleep" "wait_for_storage_gateway_up" {
+  depends_on = [aws_instance.ec2_sgw]
 
-
+  create_duration = "150s"
+}
 

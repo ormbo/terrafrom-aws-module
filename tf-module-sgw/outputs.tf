@@ -1,0 +1,16 @@
+# output "activation_key" {
+#     value = local.activation_key
+  
+# }
+output "activation_key" {
+    value = data.aws_ssm_parameter.activation_key.value
+    sensitive = true
+  
+}
+output "local_disk" {
+  value = data.aws_storagegateway_local_disk.test
+}
+
+output "disk_id" {
+  value = aws_storagegateway_cache.example.disk_id
+}

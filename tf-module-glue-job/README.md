@@ -1,6 +1,34 @@
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
+## Examples: 
+```bash
+module "aws_glue_job" {
+    source = "././modules/tf-module-glue-job"
+
+    for_each = var.data_jobs
+    job_name                = each.key
+    s3_bucket_script        = module.aws_glue_s3.s3-job-bucket-name
+    local_script_path       = each.value.local_script_path 
+    worker_type             = each.value.worker_type
+    number_of_workers       = each.value.number_of_workers
+    max_retries             = each.value.max_retries
+    additional_arguments = {
+    "--JOB_NAME"       = each.key
+    "--DATABASE_NAME"  = each.value.db_catalog_name
+    "--S3_OUTPUT"      = "s3://${module.aws_glue_s3.s3-data-bucket-name}/"
+    "--REGION_NAME"    = var.region
+    "--TempDir"        = "s3://${module.aws_glue_s3.s3-data-bucket-name}/temp/"
+    }
+
+    command = {
+        python_version  = 3
+    }
+    role_arn                = module.aws_glue_security.iam-role-glue-arn
+    depends_on              = [ module.aws_glue_s3 ]
+}
+```
+
 No requirements.
 
 ## Providers
