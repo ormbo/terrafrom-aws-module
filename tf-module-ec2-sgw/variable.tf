@@ -4,7 +4,7 @@ variable "availability_zone" {
 }
 
 variable "name" {
-  default     = "aws-storage-gateway"
+  default     = "ec2-aws-storage-gateway"
   type        = string
   description = "Name of the EC2 Storage Gateway instance"
 }
@@ -99,4 +99,9 @@ variable "cache_block_device" {
     disk_size   = 150
     volume_type = "gp3"
   }
+}
+variable "tags" {
+  type = map(string)
+  default = {}
+  
 }

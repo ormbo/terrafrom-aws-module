@@ -3,9 +3,14 @@
 ##########################
 data "aws_region" "aws_region" {}
 data "aws_caller_identity" "current" {}
-  
+
+
+
+
+
 locals {
   vpc_security_group_ids = var.create_security_group ? [aws_security_group.ec2_sg["ec2_sg"].id] : [var.security_group_id]
+
 }
 
 resource "aws_instance" "ec2_sgw" {
@@ -27,10 +32,9 @@ resource "aws_instance" "ec2_sgw" {
     volume_type = try(var.root_block_device["volume_type"], "gp3")
     kms_key_id  = try(var.root_block_device["kms_key_id"], null)
   }
-  tags = {
+  tags = merge(var.tags, {
     Name = var.name
-  }
-
+  },)
   lifecycle {
     # the Security group ID must be non-empty or create_security_group must be true
     precondition {
@@ -180,16 +184,9 @@ resource "aws_iam_role_policy_attachment" "attach-policy-to-role" {
   policy_arn = aws_iam_policy.policy.arn
 }
 
-resource "aws_ssm_parameter" "secret" {
-  name        = "/sgw/activation_key"
-  description = "The parameter for the activation key, create that to terraform destroy"
-  type        = "SecureString"
-  value       =  "null"
-
-}
-
 
 resource "aws_instance" "runner_ec2" {
+
   ami           = "ami-08b5b3a93ed654d19"
   instance_type = "t2.micro"
   subnet_id     = var.subnet_id
@@ -218,18 +215,34 @@ resource "aws_instance" "runner_ec2" {
   done
 
   echo "Saving to AWS SSM Parameter Store..."
-  aws ssm put-parameter --name "/sgw/activation_key" --value "$RESPONSE" --type "SecureString" --overwrite --region "${data.aws_region.aws_region.name}"
-
-  echo "Shutting down..."
-  sudo shutdown -h now
+  aws ssm put-parameter --name "/sgw/activation_key" --description "The Activation-Key of the Storage Gateway, after the Storage Gateway is active this parameter can be deleted" --value "$RESPONSE" --type "SecureString" --overwrite --region "${data.aws_region.aws_region.name}"
+  echo "The Key export"
   EOF
   instance_initiated_shutdown_behavior = "terminate"
   tags = {
     Name = "Runner-EC2"
   }
-  depends_on = [time_sleep.wait_for_storage_gateway_up ]
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes = [ami, instance_type]  # Ignore changes to avoid recreation if you modify the instance type or AMI.
+  }
+  depends_on = [time_sleep.wait_for_storage_gateway_up , data.aws_ssm_parameter.check_creation ]
+
 }
 
+resource "aws_ssm_parameter" "create" {
+  name = "/sgw/activation_key"
+  type = "SecureString"
+  value = "Activation-Key"
+
+  lifecycle {
+    ignore_changes = [ value ]
+  }
+}
+data "aws_ssm_parameter" "check_creation" {
+  name = "/sgw/activation_key"
+  depends_on = [ aws_ssm_parameter.create ]
+}
 resource "time_sleep" "wait_for_storage_gateway_up" {
   depends_on = [aws_instance.ec2_sgw]
 

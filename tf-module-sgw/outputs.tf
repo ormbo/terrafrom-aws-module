@@ -14,3 +14,6 @@ output "local_disk" {
 output "disk_id" {
   value = aws_storagegateway_cache.example.disk_id
 }
+output "gateway_arn" {
+    value = aws_storagegateway_gateway.storagegateway.arn
+}
