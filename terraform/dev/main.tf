@@ -45,7 +45,9 @@ module "file_share_smb" {
   share_name    = "Test-share"
   gateway_arn   = module.create_sgw.gateway_arn
   create_bucket = true
+  bucket_name   = "dwh-bucket-for-file-storage-gateway"
   authentication = "GuestAccess"
 
   depends_on = [ module.create_sgw  ]
 }
+

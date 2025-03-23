@@ -6,12 +6,11 @@ data "aws_caller_identity" "current" {}
 
 
 
-
-
 locals {
   vpc_security_group_ids = var.create_security_group ? [aws_security_group.ec2_sg["ec2_sg"].id] : [var.security_group_id]
 
 }
+
 
 resource "aws_instance" "ec2_sgw" {
   ami                    = data.aws_ami.sgw_ami.id
@@ -52,6 +51,7 @@ data "aws_ami" "sgw_ami" {
     name   = "name"
     values = ["aws-storage-gateway-FILE_S3*"]
   }
+  tags = var.tags
 }
 
 resource "aws_eip" "ip" {
@@ -59,15 +59,17 @@ resource "aws_eip" "ip" {
 }
 
 resource "aws_eip_association" "eip_assoc" {
-    count = var.create_vpc_endpoint ? 0 : 1
-    instance_id   = aws_instance.ec2_sgw.id
-    allocation_id = aws_eip.ip[0].id
+  count = var.create_vpc_endpoint ? 0 : 1
+  instance_id   = aws_instance.ec2_sgw.id
+  allocation_id = try(aws_eip.ip[0].id, null)
 }
+
 
 resource "aws_volume_attachment" "ebs_volume" {
   device_name = "/dev/sdb"
   volume_id   = aws_ebs_volume.cache_disk.id
   instance_id = aws_instance.ec2_sgw.id
+
 }
 
 resource "aws_ebs_volume" "cache_disk" {
@@ -76,6 +78,7 @@ resource "aws_ebs_volume" "cache_disk" {
   size              = try(tonumber(var.cache_block_device["disk_size"]), 150)
   type              = try(var.cache_block_device["volume_type"], "gp3")
   kms_key_id        = try(var.cache_block_device["kms_key_id"], null)
+  tags = var.tags
 }
 
 
@@ -91,9 +94,9 @@ resource "aws_vpc_endpoint" "storagegateway" {
     ]
 
     private_dns_enabled = true
-    tags = {
+    tags = merge(var.tags, {
         Name = "endpoint-storage-gateway"
-    }
+    })
 }
 
 resource "aws_security_group" "security_group_endpoint" {
@@ -136,9 +139,9 @@ resource "aws_security_group" "security_group_endpoint" {
       protocol         = "-1"
       cidr_blocks      = [var.ingress_cidr_block_activation]
     }
-  tags = {
+  tags =merge(var.tags, {
     Name = "Endpoint-HTTPS-storage-gateway"
-  }
+  }) 
 }
 
 resource "aws_iam_role" "role_ec2_instance_profile" {
@@ -162,6 +165,7 @@ data "aws_iam_policy_document" "assume_role" {
 
     actions = ["sts:AssumeRole"]
   }
+
 }
 
 data "aws_iam_policy_document" "PutParameter_permission" {
@@ -170,18 +174,20 @@ data "aws_iam_policy_document" "PutParameter_permission" {
     actions = [	
 				"ssm:GetParameter",
 				"ssm:PutParameter"]
-    resources = ["arn:aws:ssm:${data.aws_region.aws_region.name}:${data.aws_caller_identity.current.account_id}:parameter/sgw/activation_key"]
+    resources = [aws_ssm_parameter.create.arn]
     }
 }
 resource "aws_iam_policy" "policy" {
-  name        = "test-policy"
-  description = "A test policy"
+  name        = "PutParameter-Activatio-Key"
+  description = "Policy for put in Parameter store"
   policy      = data.aws_iam_policy_document.PutParameter_permission.json
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "attach-policy-to-role" {
   role       = aws_iam_role.role_ec2_instance_profile.name
   policy_arn = aws_iam_policy.policy.arn
+
 }
 
 
@@ -215,34 +221,31 @@ resource "aws_instance" "runner_ec2" {
   done
 
   echo "Saving to AWS SSM Parameter Store..."
-  aws ssm put-parameter --name "/sgw/activation_key" --description "The Activation-Key of the Storage Gateway, after the Storage Gateway is active this parameter can be deleted" --value "$RESPONSE" --type "SecureString" --overwrite --region "${data.aws_region.aws_region.name}"
-  echo "The Key export"
+  aws ssm put-parameter --name "/sgw/activation_key" --value "$RESPONSE" --type "SecureString" --overwrite --region "${data.aws_region.aws_region.name}"
   EOF
-  instance_initiated_shutdown_behavior = "terminate"
-  tags = {
+  tags = merge(var.tags, {
     Name = "Runner-EC2"
-  }
+  })
   lifecycle {
     create_before_destroy = true
     ignore_changes = [ami, instance_type]  # Ignore changes to avoid recreation if you modify the instance type or AMI.
   }
-  depends_on = [time_sleep.wait_for_storage_gateway_up , data.aws_ssm_parameter.check_creation ]
+  depends_on = [time_sleep.wait_for_storage_gateway_up ]
 
 }
 
 resource "aws_ssm_parameter" "create" {
   name = "/sgw/activation_key"
+  description = "The Activation-Key of the Storage Gateway, after the Storage Gateway is active this parameter can be deleted"
   type = "SecureString"
   value = "Activation-Key"
 
   lifecycle {
-    ignore_changes = [ value ]
+    ignore_changes = [ value, type, name ]
   }
+  tags = var.tags
 }
-data "aws_ssm_parameter" "check_creation" {
-  name = "/sgw/activation_key"
-  depends_on = [ aws_ssm_parameter.create ]
-}
+
 resource "time_sleep" "wait_for_storage_gateway_up" {
   depends_on = [aws_instance.ec2_sgw]
 

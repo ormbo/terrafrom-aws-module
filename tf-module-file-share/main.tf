@@ -10,8 +10,8 @@ resource "aws_storagegateway_smb_file_share" "smbshare" {
   default_storage_class = var.storage_class
   role_arn              = aws_iam_role.storagegateway.arn
   admin_user_list       = var.authentication == "ActiveDirectory" ? var.admin_user_list : []
-  smb_acl_enabled       = true
-  audit_destination_arn = aws_cloudwatch_log_group.log_group_sgw.arn
+  smb_acl_enabled       = false
+  audit_destination_arn = aws_cloudwatch_log_group.log_group_file_share.arn
   kms_encrypted         = var.kms_encrypted
   kms_key_arn           = var.kms_encrypted ? var.kms_key_arn : null
 
@@ -60,6 +60,18 @@ data "aws_iam_policy_document" "S3_permission" {
   statement {
     effect  = "Allow"
     actions = [
+                "s3:GetAccelerateConfiguration",
+                "s3:GetBucketLocation",
+                "s3:GetBucketVersioning",
+                "s3:ListBucket",
+                "s3:ListBucketVersions",
+                "s3:ListBucketMultipartUploads"
+            ]
+    resources = ["${var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn}"]
+    }
+    statement {
+          effect  = "Allow"
+      actions = [
                 "s3:AbortMultipartUpload",
                 "s3:DeleteObject",
                 "s3:DeleteObjectVersion",
@@ -70,7 +82,7 @@ data "aws_iam_policy_document" "S3_permission" {
                 "s3:PutObject",
                 "s3:PutObjectAcl"
             ]
-    resources = ["${var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn}"]
+    resources = ["${var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn}/*"]
     }
 }
 resource "aws_iam_policy" "policy" {
@@ -83,6 +95,6 @@ resource "aws_iam_role_policy_attachment" "attach-policy-to-role" {
   policy_arn = aws_iam_policy.policy.arn
 }
 
-resource "aws_cloudwatch_log_group" "log_group_sgw" {
+resource "aws_cloudwatch_log_group" "log_group_file_share" {
   name = "Cloud-Watch-Storage-Gateway-${var.share_name}"
 }
