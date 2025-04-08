@@ -1,11 +1,3 @@
-# Glue connection terrafrom module
-
-This module create the  following things:
-
-1. AWS glue connection with JDBC, we can use secret to connect to DB, use vpc settings.
-2. AWS glue database catalog, the default is `false` we can create one with `create_catalog_db = true`
-3. AWS glue crawler, the default is `false` we can create one with `create_crawler = true`
-
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -43,17 +35,16 @@ No modules.
 | <a name="input_create_catalog_db"></a> [create\_catalog\_db](#input\_create\_catalog\_db) | Create crawler for the connection? | `bool` | `false` | no |
 | <a name="input_create_crawler"></a> [create\_crawler](#input\_create\_crawler) | Create crawler for the connection? | `bool` | `false` | no |
 | <a name="input_data_source"></a> [data\_source](#input\_data\_source) | The data source e.g mysql | `string` | n/a | yes |
+| <a name="input_db_name"></a> [db\_name](#input\_db\_name) | The list of DB | `string` | n/a | yes |
 | <a name="input_db_password"></a> [db\_password](#input\_db\_password) | password | `string` | `null` | no |
 | <a name="input_db_username"></a> [db\_username](#input\_db\_username) | username | `string` | `null` | no |
-| <a name="input_get_from_secret_manager"></a> [get\_from\_secret\_manager](#input\_get\_from\_secret\_manager) | Get the username and password form Secret Manager (optional) | `bool` | `true` | no |
-| <a name="input_glue_database"></a> [glue\_database](#input\_glue\_database) | AWS glue database | `string` | `null` | no |
+| <a name="input_get_from_secret_manager"></a> [get\_from\_secret\_manager](#input\_get\_from\_secret\_manager) | Get the username and password form Secret Manager | `bool` | `true` | no |
 | <a name="input_glue_iam_role_name"></a> [glue\_iam\_role\_name](#input\_glue\_iam\_role\_name) | AWS glue IAM role | `string` | `"Glue-iam-role-terraform-module"` | no |
-| <a name="input_host"></a> [host](#input\_host) | The url of the DB | `string` | n/a | yes |
-| <a name="input_list_db_name"></a> [list\_db\_name](#input\_list\_db\_name) | The url of the DB | `list(string)` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | The region of the resource | `string` | n/a | yes |
-| <a name="input_secret_name"></a> [secret\_name](#input\_secret\_name) | Get the username and password form Secret Manager (optional) | `string` | `null` | no |
+| <a name="input_host"></a> [host](#input\_host) | The url of the DB or IP | `string` | n/a | yes |
+| <a name="input_secret_name"></a> [secret\_name](#input\_secret\_name) | Get the username and password form Secret Manager (optional) | `string` | n/a | yes |
 | <a name="input_security_group_id_list"></a> [security\_group\_id\_list](#input\_security\_group\_id\_list) | List of security group for connection | `list(string)` | n/a | yes |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | subnet\_id for connection (optional) | `string` | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Tags | `map(string)` | `{}` | no |
 | <a name="input_use_vpc"></a> [use\_vpc](#input\_use\_vpc) | Set to true if Glue needs to run inside a VPC (optional) | `bool` | `true` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | The vpc ID | `string` | `null` | no |
 
@@ -61,5 +52,6 @@ No modules.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_database_catalog"></a> [database\_catalog](#output\_database\_catalog) | n/a |
+| <a name="output_connection_name"></a> [connection\_name](#output\_connection\_name) | n/a |
+| <a name="output_database_catalog_name"></a> [database\_catalog\_name](#output\_database\_catalog\_name) | n/a |
 <!-- END_TF_DOCS -->

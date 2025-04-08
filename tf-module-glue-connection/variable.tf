@@ -26,12 +26,12 @@ variable "db_password" {
 }
 variable "get_from_secret_manager" {
     type = bool
-    description = "Get the username and password form Secret Manager (optional)"
+    description = "Get the username and password form Secret Manager"
+    default = true
 }
 variable "secret_name" {
     type = string
     description = "Get the username and password form Secret Manager (optional)"
-    default = null
 }
 variable "data_source" {
     type = string
@@ -56,11 +56,6 @@ variable "additional_security_group_id" {
 variable "subnet_id" {
     type = string
     description = "subnet_id for connection (optional)"
-    default = null
-}
-variable "glue_database" {
-    type = string
-    description = "AWS glue database"
     default = null
 }
 
@@ -93,4 +88,9 @@ variable "security_group_id_list" {
     type = list(string)
     description = "List of security group for connection"
   
+}
+variable "tags" {
+    type = map(string)
+    description = "Tags"
+    default = {}
 }
