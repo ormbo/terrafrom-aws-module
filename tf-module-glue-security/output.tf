@@ -8,3 +8,7 @@ output "iam-role-glue-arn" {
 output "glue_security_group_id" {
     value = aws_security_group.glue-security-group.id
 }
+output "glue-security-group-name" {
+    value = aws_security_group.glue-security-group.name
+  
+}

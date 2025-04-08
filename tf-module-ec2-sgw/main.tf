@@ -17,7 +17,7 @@ resource "aws_instance" "ec2_sgw" {
   vpc_security_group_ids = local.vpc_security_group_ids
   subnet_id              = var.subnet_id
   instance_type          = var.instance_type
-  key_name               = var.ssh_key_name
+  key_name               = try(var.ssh_key_name, "")
   ebs_optimized          = true
   availability_zone      = var.availability_zone
 
