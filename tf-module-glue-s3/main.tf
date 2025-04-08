@@ -22,7 +22,7 @@ resource "aws_glue_crawler" "jdbc-crawler-s3" {
   role          = var.glue_iam_role_name
   
   s3_target {
-    path = ("s3://${var.bucket_name}/")
+    path = var.specific_folder ? ("s3://${var.bucket_name}/${var.folder_name}") : ("s3://${var.bucket_name}/")
   }
   tags = var.tags
 }
