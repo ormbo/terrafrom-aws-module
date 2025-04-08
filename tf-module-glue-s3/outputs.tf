@@ -1,9 +1,10 @@
-output "s3-data-bucket-name" {
-    value = module.s3-bucket-data.s3_bucket_id  
-}
-output "s3-job-bucket-name" {
-    value = module.s3-bucket-job.s3_bucket_id  
-}
 output "crawler_name_s3" {
-    value = aws_glue_crawler.jdbc-crawler-s3.name
+    value = try(aws_glue_crawler.jdbc-crawler-s3[0].name, "")
+}
+output "crawler_arn" {
+    value = try(aws_glue_crawler.jdbc-crawler-s3[0].arn, "")
+}
+output "catalog_db_name" {
+    value = try(aws_glue_catalog_database.catalog_database_s3[0].name, "")
+  
 }
