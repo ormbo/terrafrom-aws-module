@@ -50,14 +50,12 @@ resource "aws_storagegateway_gateway" "storagegateway" {
   },)
   depends_on            = [ data.aws_ssm_parameter.activation_key ] 
   lifecycle {
-    ignore_changes = [
-      activation_key,
-    ]
+    ignore_changes = all
   }
 }
 
-resource "aws_storagegateway_cache" "example" {
-  disk_id     = data.aws_storagegateway_local_disk.test.disk_id
+resource "aws_storagegateway_cache" "storagegateway_cache" {
+  disk_id     = data.aws_storagegateway_local_disk.storagegateway_local_disk.disk_id
   gateway_arn = aws_storagegateway_gateway.storagegateway.arn
   lifecycle {
     ignore_changes = [
@@ -65,7 +63,7 @@ resource "aws_storagegateway_cache" "example" {
   }
 }  
 
-data "aws_storagegateway_local_disk" "test" {
+data "aws_storagegateway_local_disk" "storagegateway_local_disk" {
   disk_node   = var.device_name
   gateway_arn = aws_storagegateway_gateway.storagegateway.arn
 }
