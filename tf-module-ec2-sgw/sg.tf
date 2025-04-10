@@ -16,6 +16,16 @@ resource "aws_security_group" "ec2_sg" {
     Name = "${var.name}-security-group"
   }
 }
+resource "aws_security_group_rule" "icmp" {
+  for_each          = var.create_security_group == true ? toset(["http"]) : toset([])
+  type              = "ingress"
+  from_port         = -1
+  to_port           = -1
+  protocol          = "icmp"
+  description       = "Allow ICMP"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
 resource "aws_security_group_rule" "ssh" {
   for_each          = var.create_security_group == true ? toset(["http"]) : toset([])
   type              = "ingress"
@@ -149,13 +159,63 @@ resource "aws_security_group_rule" "smb_netbios_tcp" {
   security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
 }
 
-resource "aws_security_group_rule" "smb_netbios_udp" {
+resource "aws_security_group_rule" "AD_udp_1" {
   for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
   type              = "ingress"
-  from_port         = 139
-  to_port           = 139
+  from_port         = 137
+  to_port           = 137
   protocol          = "udp"
-  description       = "SMB over NetBIOS - UDP"
+  description       = "Microsoft Active Directory"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
+resource "aws_security_group_rule" "AD_udp_2" {
+  for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
+  type              = "ingress"
+  from_port         = 138
+  to_port           = 138
+  protocol          = "udp"
+  description       = "Microsoft Active Directory"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
+resource "aws_security_group_rule" "AD_udp_3" {
+  for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
+  type              = "ingress"
+  from_port         = 389
+  to_port           = 389
+  protocol          = "udp"
+  description       = "Microsoft Active Directory"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
+resource "aws_security_group_rule" "AD_tcp_4" {
+  for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
+  type              = "ingress"
+  from_port         = 389
+  to_port           = 389
+  protocol          = "tcp"
+  description       = "Microsoft Active Directory"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
+resource "aws_security_group_rule" "AD_udp_5" {
+  for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
+  type              = "ingress"
+  from_port         = 88
+  to_port           = 88
+  protocol          = "udp"
+  description       = "Microsoft Active Directory - Kerberos"
+  cidr_blocks       = local.ingress_cidr_blocks_list
+  security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
+}
+resource "aws_security_group_rule" "AD_tcp_6" {
+  for_each          = var.create_security_group == true ? toset(["smb_netbios_udp"]) : toset([])
+  type              = "ingress"
+  from_port         = 88
+  to_port           = 88
+  protocol          = "tcp"
+  description       = "Microsoft Active Directory - Kerberos"
   cidr_blocks       = local.ingress_cidr_blocks_list
   security_group_id = aws_security_group.ec2_sg["ec2_sg"].id
 }

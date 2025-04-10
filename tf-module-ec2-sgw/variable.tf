@@ -1,8 +1,3 @@
-variable "availability_zone" {
-  type        = string
-  description = "Availability zone for the Gateway EC2 Instance"
-}
-
 variable "name" {
   default     = "ec2-aws-storage-gateway"
   type        = string

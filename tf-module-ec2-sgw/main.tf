@@ -3,23 +3,41 @@
 ##########################
 data "aws_region" "aws_region" {}
 data "aws_caller_identity" "current" {}
-
+data "aws_availability_zones" "availability_zone" {
+  
+}
 
 
 locals {
   vpc_security_group_ids = var.create_security_group ? [aws_security_group.ec2_sg["ec2_sg"].id] : [var.security_group_id]
 
 }
+resource "tls_private_key" "rsa" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+resource "aws_key_pair" "ssh_key_sgw" {
+  key_name   = var.ssh_key_name
+  public_key = tls_private_key.rsa.public_key_openssh
+}
+resource "aws_secretsmanager_secret" "ssh-key" {
+  name        = var.ssh_key_name  
+  description = "SSH Key pem to connect the ec2 Storage Gateway"
+  recovery_window_in_days = 0
 
-
+}
+resource "aws_secretsmanager_secret_version" "ssh-key" {
+  secret_id     = aws_secretsmanager_secret.ssh-key.id
+  secret_string = tls_private_key.rsa.private_key_pem
+}
 resource "aws_instance" "ec2_sgw" {
   ami                    = data.aws_ami.sgw_ami.id
   vpc_security_group_ids = local.vpc_security_group_ids
   subnet_id              = var.subnet_id
   instance_type          = var.instance_type
-  key_name               = try(var.ssh_key_name, "")
+  key_name               = var.ssh_key_name
   ebs_optimized          = true
-  availability_zone      = var.availability_zone
+  availability_zone      = data.aws_availability_zones.availability_zone.names[0]
 
   metadata_options {
     http_tokens = "required"
@@ -31,9 +49,7 @@ resource "aws_instance" "ec2_sgw" {
     volume_type = try(var.root_block_device["volume_type"], "gp3")
     kms_key_id  = try(var.root_block_device["kms_key_id"], null)
   }
-  tags = merge(var.tags, {
-    Name = var.name
-  },)
+
   lifecycle {
     # the Security group ID must be non-empty or create_security_group must be true
     precondition {
@@ -41,6 +57,10 @@ resource "aws_instance" "ec2_sgw" {
       error_message = "Please specify create_security_group = true or provide a valid Security Group ID for var.security_group_id"
     }
   }
+    tags = merge(var.tags, {
+    Name = var.name
+  },)
+  depends_on = [ aws_key_pair.ssh_key_sgw ]
 }
 
 data "aws_ami" "sgw_ami" {
@@ -193,8 +213,8 @@ resource "aws_iam_role_policy_attachment" "attach-policy-to-role" {
 
 resource "aws_instance" "runner_ec2" {
 
-  ami           = "ami-08b5b3a93ed654d19"
-  instance_type = "t2.micro"
+  ami           = data.aws_ami.runner_ami.id
+  instance_type = "t3.micro"
   subnet_id     = var.subnet_id
   vpc_security_group_ids = local.vpc_security_group_ids
   iam_instance_profile = aws_iam_instance_profile.runner_ec2_profile.name
@@ -232,6 +252,30 @@ resource "aws_instance" "runner_ec2" {
   }
   depends_on = [time_sleep.wait_for_storage_gateway_up ]
 
+}
+data "aws_ami" "runner_ami" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"] # Use "arm64" if running on ARM-based instances like Graviton
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
 }
 
 resource "aws_ssm_parameter" "create" {
