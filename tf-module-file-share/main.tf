@@ -6,7 +6,7 @@ resource "aws_storagegateway_smb_file_share" "smbshare" {
   file_share_name       = var.share_name
   authentication        = var.authentication
   gateway_arn           = var.gateway_arn
-  location_arn          = var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn
+  location_arn          = var.bucket_arn
   default_storage_class = var.storage_class
   role_arn              = aws_iam_role.storagegateway.arn
   admin_user_list       = var.authentication == "ActiveDirectory" ? var.admin_user_list : []
@@ -23,19 +23,6 @@ resource "aws_storagegateway_smb_file_share" "smbshare" {
 
 }
 
-module "s3-bucket-storagegateway" {
-    count = var.create_bucket ? 1 : 0
-    source            = "terraform-aws-modules/s3-bucket/aws"
-    version           = "4.5.0"
-
-    bucket = var.bucket_name
-    acl    = "private"
-    control_object_ownership = true
-    object_ownership         = "ObjectWriter"
-    versioning = {
-        enabled = true
-    }
-}
 
 resource "aws_iam_role" "storagegateway" {
   name               = "S3-permission-storagegateway-role"
@@ -67,7 +54,7 @@ data "aws_iam_policy_document" "S3_permission" {
                 "s3:ListBucketVersions",
                 "s3:ListBucketMultipartUploads"
             ]
-    resources = ["${var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn}"]
+    resources = ["${var.bucket_arn}"]
     }
     statement {
           effect  = "Allow"
@@ -82,7 +69,7 @@ data "aws_iam_policy_document" "S3_permission" {
                 "s3:PutObject",
                 "s3:PutObjectAcl"
             ]
-    resources = ["${var.create_bucket ? module.s3-bucket-storagegateway[0].s3_bucket_arn : var.bucket_arn}/*"]
+    resources = ["${var.bucket_arn}/*"]
     }
 }
 resource "aws_iam_policy" "policy" {
