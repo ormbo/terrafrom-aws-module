@@ -6,8 +6,8 @@ terraform {
     }
   }
 backend "s3" {
-    bucket  = "dwh-bi-state-s3"
-    key     = "terraform-state/terraform.tfstate"
+    bucket  = "bucket-for-tfstate-orb"
+    key     = "state/terraform-modules.tfstate"
     region  = "us-east-1"
   }
  }

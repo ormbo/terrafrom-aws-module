@@ -1,3 +1,16 @@
+############## Global Variable ##############
+
+variable "tags" {
+    type        =   map(string)
+    description =   "Tags for resources"
+}
+variable "region" {
+    type        =   string
+    description =   "resource region"
+}
+
+############## VPC Variable ##############
+
 variable "vpc-name" {
     type = string
     description = "Name of VPC"
