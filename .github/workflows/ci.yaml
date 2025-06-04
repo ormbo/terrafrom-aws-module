@@ -1,17 +1,14 @@
-name: Test Workflow
-
+name: Test PR
 
 on:
-  pull_request_review:
+  pull_request:
     types:
-      - submitted
+      - closed
 
 jobs:
-  build-image:
+  if_merged:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-  
     steps:
-        - name: print the body
-          env:
-            BODY: ${{ github.event.pull_request.body }}
-          run: echo $BODY
+    - run: |
+        echo The PR was merged
