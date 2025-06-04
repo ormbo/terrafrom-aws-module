@@ -2,9 +2,9 @@ name: Test Workflow
 
 
 on:
-    pull_request:
-      types:
-        - review_requested
+  pull_request_review:
+    types:
+      - submitted
 
 jobs:
   build-image:
