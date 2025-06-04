@@ -1,0 +1,19 @@
+name: Test Workflow
+
+
+on:
+    pull_request:
+      types:
+        - opened
+      branches:
+        - 'dev/**'
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+  
+    steps:
+        - name: print the body
+          env:
+            BODY: ${{ github.event.pull_request.body }}
+          run: echo $BODY
